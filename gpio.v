@@ -1,4 +1,3 @@
-
 //                APB4 GPIO                                        //
 //                                                                 //
 /////////////////////////////////////////////////////////////////////
@@ -51,17 +50,18 @@
  * 0x3      input register      returns data at pad
   */
 
-module apb_gpio (PRESETn,PCLK,PSEL,PENABLE,PADDR,PWRITE,PSTRB,PWDATA,PRDATA,PREADY,PSLEVRR,gpio_i,gpio_o,gpio_oe);
+module apb_gpio1 (PRESETn,PCLK,PSEL,PENABLE,PADDR,PWRITE,PSTRB,PWDATA,PRDATA,PREADY,PSLEVRR,gpio_i,gpio_o,gpio_oe);
 	parameter PDATA_SIZE = 32 ,PADDR_SIZE = 4; //must be multiple of 8
+	localparam MODE = 0,DIRECTION = 1,OUTPUT= 2,INPUT= 3, INPUT_STAGES = 2;
 	input PRESETn, PCLK, PENABLE, PWRITE,PSEL;
 	input[PADDR_SIZE-1:0] PADDR;
 	input[PDATA_SIZE/8-1:0] PSTRB;
 	input[PDATA_SIZE-1:0] PWDATA, gpio_i;
 	output reg[PDATA_SIZE-1:0]PRDATA,gpio_o,gpio_oe;
 	output PREADY, PSLEVRR ;
-	reg[PDATA_SIZE-1:0] dir_reg,out_reg,in_reg, mode_reg;
-	integer i ;
-  localparam MODE = 0,DIRECTION = 1,OUTPUT= 2,INPUT= 3;
+	reg[PDATA_SIZE-1:0]input_regs[0:INPUT_STAGES-1] ,dir_reg,out_reg,in_reg, mode_reg ;
+	integer i ,j,k;
+  
 	 //The core supports zero-wait state accesses on all transfers.
   //It is allowed to drive PREADY with a hard wired signal
 	assign PREADY  = 1'b1; //always ready
@@ -101,14 +101,24 @@ module apb_gpio (PRESETn,PCLK,PSEL,PENABLE,PADDR,PWRITE,PSTRB,PWDATA,PRDATA,PREA
     case (PADDR)
 	  MODE     : PRDATA <= mode_reg;	
       DIRECTION: PRDATA <= dir_reg;
-      OUTPUT   : PRDATA <= out_reg;
-      INPUT    : PRDATA <= in_reg;
+      OUTPUT   :  
+	  	PRDATA <= out_reg;
+	  INPUT    : begin 
+		if((PSEL & PENABLE & ~PWRITE))
+			PRDATA <= in_reg; //add condition
+	  end
       default  : PRDATA <= {PDATA_SIZE{1'b0}};
     endcase	
 	
+	 always @(posedge PCLK)
+    for ( k=0; k<INPUT_STAGES; k = k +1)
+       if (k==0) input_regs[k] <= gpio_i;
+       else      input_regs[k] <= input_regs[k-1];
+
+  always @(posedge PCLK)
+    in_reg <= input_regs[INPUT_STAGES-1];
     //my modification
-	always @(posedge PCLK)
-		in_reg <= gpio_i;
+	
 		
 	 // mode
   // 0=push-pull    drive out_reg value onto transmitter input
@@ -124,11 +134,6 @@ module apb_gpio (PRESETn,PCLK,PSEL,PENABLE,PADDR,PWRITE,PSTRB,PWDATA,PRDATA,PREA
   //            1=open-drain  1=Hi-Z   disable transmitter
   //                          0=low    enable transmitter
   always @(posedge PCLK)
-    for (i=0; i<PDATA_SIZE; i = i +1 )
-      gpio_oe[i] <= dir_reg[i] & ~(mode_reg[i] ? out_reg[i] : 1'b0)	;
+    for (j=0; j<PDATA_SIZE; j = j +1 )
+      gpio_oe[j] <= dir_reg[j] & ~(mode_reg[j] ? out_reg[j] : 1'b0)	;
 endmodule	
-
-
-
-
-
