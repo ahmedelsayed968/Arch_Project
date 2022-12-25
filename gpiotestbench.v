@@ -1,4 +1,7 @@
-module apb_gpio_test_bench();
+
+
+
+module final_test_bench();
   parameter PDATA_SIZE = 32 ,PADDR_SIZE = 4;
   reg PRESETn, PENABLE, PWRITE, PSEL;
   reg PCLK;
@@ -7,35 +10,87 @@ module apb_gpio_test_bench();
 	reg[PDATA_SIZE-1:0] PWDATA, gpio_i;
 	wire[PDATA_SIZE-1:0]PRDATA,gpio_o,gpio_oe;
 	wire PREADY, PSLEVRR ;
-	
-  apb_gpio gpio(PRESETn,PCLK,PSEL,PENABLE,PADDR,PWRITE,PSTRB,PWDATA,PRDATA,PREADY,PSLEVRR,gpio_i,gpio_o,gpio_oe);
+	 integer k = 1;
+  apb_gpio1 gpio(PRESETn,PCLK,PSEL,PENABLE,PADDR,PWRITE,PSTRB,PWDATA,PRDATA,PREADY,PSLEVRR,gpio_i,gpio_o,gpio_oe);
   
   integer i;
 	initial begin 
-	 PCLK <= 1'b0;
+	  $display("gpio out\tgpio enable\tgpio inut\tPWDATA\tPRDATA");
+	$monitor("%h, %h, %h, %h, %h,%b",gpio_o,gpio_oe,gpio_i,PWDATA,PRDATA,PSTRB);
+	 PCLK <= 1'b1;
 	 PRESETn <= 1'b1;
+	 
+	 //setting mode register
+	 PSEL <= 1'b1;
+	 PADDR<= 4'b0000;
+	 PWRITE <= 1'b1;
+	 PSTRB <= 4'b1111;
+	 PWDATA <= 0;
+	 #10
 	 PENABLE <= 1'b1;
 	 
+
+	 //clearing
+	 #10
+	 PSEL <= 1'b0;
+	 PENABLE <= 1'b0;
+	 //setting direction register
+	 #10
+	 PSEL <= 1'b1;
+	 PADDR<= 4'b0001;
+	 PWRITE <= 1'b1;
+	 PSTRB <= 4'hf;
+	 PWDATA <= 32'hffffffff;
+	 #10
+	 PENABLE <= 1'b1;
+	 
+	
+
+	 //clearing
+	  #10
+	 PSEL <= 1'b0;
+	 PENABLE <= 1'b0;
+	 //writing data
+	 #10
 	 PSEL <= 1'b1;
 	 PADDR<= 4'b0010;
-	 PSTRB <= 4'b1111;
-	 
 	 PWRITE <= 1'b1;
 	 
-	 PWDATA <= 30;
-	/* for(i=0;i<10;i=i+1)begin
-	   PWDATA <= i;
-	   #5
-	   $display("%d,%d",gpio_o,gpio_oe);
+	 // testing setting each bit once
+	 PSTRB <= 8'hff;
+	 #10
+	
+	 for(i=0;i<32;i=i+1)begin
+		PENABLE <= 1'b0;
+	   PWDATA <= k<<i;
+	   #10
+	   PENABLE <= 1'b1;
+	   #10;
 	 end
 	 
 	 
-	 PWRITE <= 1'b0;
-	 for(i=0;i<10;i=i+1)begin
-	   gpio_i <= i;
-	   #5
-	   $display("%d,%d",PRDATA,gpio_oe);
-	 end*/
+	 
+	// testing allowing writting on one bit at once
+	
+	#10;
+	$display("***********************************************************************");
+	 $display("gpio out\tgpio enable\tgpio inut\tPWDATA\tPRDATA");
+
+	 for(i=0;i<32;i=i+1)begin
+		PENABLE <= 1'b0;
+		PSTRB <= 4'hf;
+		PWDATA <= 0;
+		#10
+		PENABLE <= 1'b1;
+		#10
+		PENABLE <= 1'b0;
+		PSTRB <= i;
+	   PWDATA <= -1;
+	   #10
+	   PENABLE <= 1'b1;
+	   #10;
+	 end
+	
 	 
   end
   
@@ -45,3 +100,5 @@ module apb_gpio_test_bench();
     
   
 endmodule
+
+
