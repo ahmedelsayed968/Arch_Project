@@ -135,7 +135,7 @@ output reg     [SLAVES_NUM-1:0]  PSEL
    begin
      if(!PRESETn) 
        begin
-         PPROT      <= 3'b0 ;// production
+         PPROT      <= 3'b0 ;
          PENABLE    <= 1'b0 ;
          PADDR      <= 8'b0 ;//8 bit for address
          PWDATA     <=  'b0 ;
@@ -146,7 +146,7 @@ output reg     [SLAVES_NUM-1:0]  PSEL
        end
      else if(next_state == SETUP)
        begin
-         PPROT     <= IN_PROT  ;// production
+         PPROT     <= IN_PROT  ;
          PENABLE   <= 1'b0     ;
          PADDR     <= IN_ADDR  ;
          PWRITE    <= IN_WRITE ;
