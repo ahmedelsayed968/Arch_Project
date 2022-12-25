@@ -7,6 +7,7 @@ module APB_MASTER #(parameter
     ADDRESS_WIDTH = 'd4,// using two Slaves (UARTS, GPIO)
     STRB_WIDTH = 'd4,
     SLAVES_NUM = 'd2) (
+input  wire  [2:0]               IN_PROT    ,/*PROT bus is received from the previous system bus and it is used to indicate if the transaction is secure or not*/
 input  wire                      PCLK       ,
 input  wire                      PRESETn    ,
 input  wire  [ADDRESS_WIDTH-1:0] IN_ADDR    ,
@@ -18,6 +19,9 @@ input  wire                      Transfer   ,
 input  wire                      PREADY     ,
 input  wire                      PSLVERR    , //An error signal, PSLVERR, to indicate the failure of a transfer
 
+output reg   [2:0]               PPROT      ,/*[0]	1 = privileged access, 0 = normal access(Normal,  LOW indicates a normal access, HIGH indicates a privileged access.)
+                                               [1]	1 = nonsecure access, 0 = secure access(Secure or non-secure, LOW indicates a secure access HIGH indicates a non-secure access.)
+                                               [2]	1 = instruction access, 0 = data access(Data or Instruction, LOW indicates a data access, HIGH indicates an instruction access)*/
 output reg                       OUT_SLVERR ,
 output reg   [DATA_WIDTH-1:0]    OUT_RDATA  ,
 output reg   [ADDRESS_WIDTH-1:0] PADDR      ,
@@ -131,6 +135,7 @@ output reg     [SLAVES_NUM-1:0]  PSEL
    begin
      if(!PRESETn) 
        begin
+         PPROT      <= 3'b0 ;// production
          PENABLE    <= 1'b0 ;
          PADDR      <= 8'b0 ;//8 bit for address
          PWDATA     <=  'b0 ;
@@ -141,6 +146,7 @@ output reg     [SLAVES_NUM-1:0]  PSEL
        end
      else if(next_state == SETUP)
        begin
+         PPROT     <= IN_PROT  ;// production
          PENABLE   <= 1'b0     ;
          PADDR     <= IN_ADDR  ;
          PWRITE    <= IN_WRITE ;
