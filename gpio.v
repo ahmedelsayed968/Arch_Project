@@ -68,7 +68,7 @@ module apb_gpio1 (PRESETn,PCLK,PSEL,PENABLE,PADDR,PWRITE,PSTRB,PWDATA,PRDATA,PRE
 	assign PSLVERR = 1'b0; //Never an error
 	//APB write to Mode register
   always @(posedge PCLK,negedge PRESETn)
-    if      (!PRESETn              ) mode_reg <= {PDATA_SIZE{1'b0}};
+    if      (!PRESETn) mode_reg <= {PDATA_SIZE{1'b0}};
     else if (PSEL & PENABLE & PWRITE & (PADDR == MODE)) begin
 			mode_reg[7:0] = PSTRB[0] ? PWDATA[7:0] : mode_reg[7:0];
 			mode_reg[15:8] = PSTRB[1] ? PWDATA[15:8] : mode_reg[15:8];
@@ -101,9 +101,8 @@ module apb_gpio1 (PRESETn,PCLK,PSEL,PENABLE,PADDR,PWRITE,PSTRB,PWDATA,PRDATA,PRE
     case (PADDR)
 	  MODE     : PRDATA <= mode_reg;	
       DIRECTION: PRDATA <= dir_reg;
-      OUTPUT   :  
-	  	PRDATA <= out_reg;
-	  INPUT    : begin 
+      OUTPUT   : PRDATA <= out_reg;
+      INPUT    : begin 
 		if((PSEL & PENABLE & ~PWRITE))
 			PRDATA <= in_reg; //add condition
 	  end
@@ -137,3 +136,5 @@ module apb_gpio1 (PRESETn,PCLK,PSEL,PENABLE,PADDR,PWRITE,PSTRB,PWDATA,PRDATA,PRE
     for (j=0; j<PDATA_SIZE; j = j +1 )
       gpio_oe[j] <= dir_reg[j] & ~(mode_reg[j] ? out_reg[j] : 1'b0)	;
 endmodule	
+
+
