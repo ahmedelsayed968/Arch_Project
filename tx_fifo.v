@@ -1,5 +1,5 @@
 // FIFO_Tx
-include "Clk_generator.v"
+
 
 module fifo_tx(clk_fifo_tx, data_in, next_frame, data_out,fifo_tx_full,fifo_tx_empty);
 	input clk_fifo_tx;
@@ -12,9 +12,9 @@ module fifo_tx(clk_fifo_tx, data_in, next_frame, data_out,fifo_tx_full,fifo_tx_e
 	output reg fifo_tx_full = 1'b0;								// to check fifo is full or not
     output reg fifo_tx_empty= 1'b1;								// to check fifo is empty or not
 	
-	reg[$clog2(MAX_FIFO_FRAME):0] front_pos =-1;			// top of the QUEUE/FIFo
+	reg[$clog2(MAX_FIFO_FRAME)-1:0] front_pos =-1;			// top of the QUEUE/FIFo
 
-	reg[$clog2(MAX_FIFO_FRAME):0] rear_pos  =-1;			// back of the QUEUE/FIFo
+	reg[$clog2(MAX_FIFO_FRAME)-1:0] rear_pos  =-1;			// back of the QUEUE/FIFo
 	reg write;
 	
 	
@@ -47,10 +47,10 @@ module fifo_tx(clk_fifo_tx, data_in, next_frame, data_out,fifo_tx_full,fifo_tx_e
     		    end
 			else
 				begin
-					if(front_pos==-1)
+					if(front_pos== -1)
 						fifo_tx_empty <= 1'b1;
 					
-					else if(front_pos==rear_pos)
+					else if(front_pos== rear_pos)
 						begin
 							data_out <= mem_fifo[front_pos];
 							front_pos <= -1;
@@ -70,7 +70,7 @@ endmodule
 
 
 
-module fifoTs;
+
 	
 	
 	
