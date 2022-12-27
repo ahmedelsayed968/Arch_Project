@@ -11,7 +11,7 @@ module uartRx (rxStart,rxD,rst,clk,rxData,store,clrRxStartBit);
   input rxStart,rxD,rst,clk;
   
   //Outputs
-  output[10:0] rxData;
+  output [10:0] rxData;
   output store,clrRxStartBit;
   
   //flag signals 
@@ -38,7 +38,7 @@ module uartRx (rxStart,rxD,rst,clk,rxData,store,clrRxStartBit);
   //Rx Bit Counter 
   always@(posedge clk,negedge rst)
   begin 
-    if(!rst || rxBitCount==4'd11 )
+    if((!rst) || (rxBitCount==4'd11) )
       begin
         rxBitCount <=0;
         end 
@@ -61,9 +61,10 @@ module uartRx (rxStart,rxD,rst,clk,rxData,store,clrRxStartBit);
    always@(posedge clk,negedge rst)
    begin 
      if (!rst)
-       rxShiftReg<=11'd2047;
+       rxShiftReg<=11'd2047; // starting with all ones 
      else if (rxShiftFlag)
        rxShiftReg<={rxD,rxShiftReg[10:1]};
+     
      end
      
      //switch cases of the states
@@ -77,43 +78,50 @@ module uartRx (rxStart,rxD,rst,clk,rxData,store,clrRxStartBit);
     end 
     
     always@(*)
-    begin 
+    begin
+     nextState=IDLE; 
       case (state)
+        
         IDLE: begin
           if(rxStart&&rxD)
-            nextState=counter16;
+            nextState=COUNT;
           else
             nextState=IDLE;
          end
          
          COUNT: begin
-            if(counter16<4'hF) 
+            if(counter16<15) 
               nextState=COUNT;
           else 
               nextState=BIT_COUNT;
             end
+            
           BIT_COUNT:
           begin
              if (rxBitCount<4'hA)
                nextState=COUNT;
              else 
                nextState=RECEIVED;
-             end 
+             end
+              
           RECEIVED:
           begin
-               if (rxBitCount==4'hB)
+               if (rxBitCount<4'hB)
                  nextState=CLEAR;
                else 
                  nextState=RECEIVED;
                end 
+               
            CLEAR:
            begin
              nextState=IDLE;
            end
+           
            default:
            begin
              nextState=IDLE;
-           end 
+           end
+            
      endcase 
    end 
    
@@ -123,13 +131,98 @@ module uartRx (rxStart,rxD,rst,clk,rxData,store,clrRxStartBit);
     assign rxShiftFlag=(state==BIT_COUNT)?1:0;
    
 assign rxBitCountFlag=(state==BIT_COUNT)?1:0;
+    assign store=(state==RECEIVED)?1:0;
    
 assign clrRxStartBit=(state==CLEAR)?1:0;
    
-assign store=(state==RECEIVED)?1:0;
+
     assign 
 rxData=rxShiftReg;
    
+
  
 endmodule 
+
  
+
+ 
+
+ 
+
+ 
+
+module uart_tb ();
+ 
+  // Testbench uses a 10 MHz clock
+  // Want to interface to 115200 baud UART
+  // 10000000 / 115200 = 87 Clocks Per Bit.
+  parameter c_CLOCK_PERIOD_NS = 10;
+  parameter c_CLKS_PER_BIT    = 16;
+  parameter c_BIT_PERIOD      = 160;
+   
+  reg r_Clock = 0;
+  reg r_Rx_Serial = 1;
+  wire [10:0] w_Rx_Byte;
+  
+  reg rxStart,rst;
+  wire store,clrRxStartBit;
+
+     
+  uartRx u(rxStart,r_Rx_Serial,rst,r_Clock,w_Rx_Byte,store,clrRxStartBit);
+
+ 
+  // Takes in input byte and serializes it 
+  task UART_WRITE_BYTE;
+    input [10:0] i_Data;
+    integer     ii;
+    begin
+       
+      // Send Start Bit
+      r_Rx_Serial <= 1'b0;
+      #(c_BIT_PERIOD);
+      //#1000;
+       
+       
+      // Send Data Byte
+      for (ii=0; ii<11; ii=ii+1)
+        begin
+          r_Rx_Serial <= i_Data[ii];
+          #(c_BIT_PERIOD);
+        end
+       
+      // Send Stop Bit
+      r_Rx_Serial <= 1'b1;
+      #(c_BIT_PERIOD);
+     end
+  endtask // UART_WRITE_BYTE  
+
+  always
+    #(c_CLOCK_PERIOD_NS/2) r_Clock <= !r_Clock;
+ 
+  // Main Testing:
+  initial
+    begin
+  rst = 1'b1;
+  #10
+  rst = 1'b0;
+  #10
+  rst = 1'b1;
+  rxStart =1'b1;
+           
+      // Send a command to the UART (exercise Rx)
+      @(posedge r_Clock);
+      UART_WRITE_BYTE(11'h00);
+      @(posedge r_Clock);
+             
+      // Check that the correct command was received
+      if (w_Rx_Byte == 11'h00)
+        $display("Test Passed - Correct Byte Received");
+      else
+        $display("Test Failed - Incorrect Byte Received");
+       
+    end
+   
+endmodule
+
+
+
