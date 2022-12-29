@@ -143,19 +143,11 @@ rxData=rxShiftReg;
  
 endmodule 
 
- 
-
- 
-
- 
 
  
 
 module uart_tb ();
  
-  // Testbench uses a 10 MHz clock
-  // Want to interface to 115200 baud UART
-  // 10000000 / 115200 = 87 Clocks Per Bit.
   parameter c_CLOCK_PERIOD_NS = 10;
   parameter c_CLKS_PER_BIT    = 16;
   parameter c_BIT_PERIOD      = 160;
