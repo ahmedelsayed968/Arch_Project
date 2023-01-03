@@ -23,7 +23,8 @@ parameter DATA_WIDTH_TB = 'd32,
   reg                          PCLK_TB      ;      
   reg                          PRESETn_TB   ;    
   reg  [ADDRESS_WIDTH_TB-1:0]  IN_ADDR_TB   ;    
-              
+ reg[PDATA_SIZE-1:0]	GPIO_o,GPIO_oe;   
+ wire [PDATA_SIZE-1:0]  GPIO_i;         
  wire                          OUT_SLVERR_TB;  
  wire   [DATA_WIDTH_TB-1:0]    OUT_RDATA_TB ;  
  wire   [ADDRESS_WIDTH_TB-1:0] PADDR_TB     ;      
@@ -44,7 +45,7 @@ begin
 	rst();
 	
     $display("////////////////////////////////////// write opteration with no waits//////////////////////////////////////////");
-    write_no_wait('b10,'b01);
+   write_no_wait('b10,'b01);
   
     $display("/////////////////////////////////////Test write opteration with waits////////////////////////////////////////////");
     write_with_wait('b10,'b01);
@@ -90,6 +91,7 @@ end
  .PENABLE(PENABLE_TB),
  .PSEL(PSEL_TB)
  );
+ APB_GPIO aa (PRESETn_TB,PCLK_TB,PSEL_TB,PENABLE_TB,IN_ADDR_TB,IN_WRITE_TB,IN_STRB_TB,IN_DATA_TB,PRDATA,PRDATA_TB,PSLVERR_TB,GPIO_i,GPIO_o,GPIO_oe)
 
 
 task init();
@@ -257,7 +259,7 @@ endtask
  
 task read_no_wait(
     input reg  [SLAVES_NUM_TB-1:0]  SLAVE1,
-	 input reg  [SLAVES_NUM_TB-1:0]  SLAVE2
+	 input reg  [SLAVES_NUM_TB-1:0]  SLAVE2z
 );
 begin
     #10
