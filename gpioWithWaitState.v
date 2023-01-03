@@ -1,3 +1,37 @@
+//                APB  GPIO  module                                 //
+//                                                                 //
+/////////////////////////////////////////////////////////////////////
+//                                                                 //
+//                Mina Mounir Farid Gendi 1901384                  //
+//                                                                 //
+//                                                                 //
+//   Standard File Header Section  -------
+// FILE NAME      : APB_GPIO.v
+// AUTHOR         : Mina Mounir  Farid Gendi
+// DEPARTMENT     : Senior 1 Section 4 CSE Department Ain Shams University 
+// AUTHOR'S EMAIL : 1901384@eng.asu.edu.eg
+// ------------------------------------------------------------------
+// RELEASE HISTORY
+
+// KEYWORDS :  APB General Purpose IO GPIO     
+// ------------------------------------------------------------------
+// PURPOSE  : General purpose IO          
+// ------------------------------------------------------------------
+// PARAMETERS
+//  PARAM NAME        RANGE    DESCRIPTION              DEFAULT UNITS
+//  PDATA_SIZE        1+       Databus (and GPIO) size  32       bits
+//  PADDR_SIZE        1+       Addrbus (and GPIO) size  4        bits
+// ------------------------------------------------------------------
+// REUSE ISSUES 
+//   Reset Strategy      : external asynchronous active low; PRESETn
+//   Clock Domains       : PCLK, rising edge
+//   Clock frequency     : 770MHz (optimized)
+//   Test Features       : na
+//   Asynchronous I/F    : no
+//   Scan Methodology    : na
+//   Instantiations      : in GPIO testbench
+//   Synthesizable (y/n) : Yes
+//   APB role			 : slave     
 /*
  * address  description         comment
  * ------------------------------------------------------------------
