@@ -1,68 +1,17 @@
-//                APB  GPIO  module                                 //
-//                                                                 //
-/////////////////////////////////////////////////////////////////////
-//                                                                 //
-//                Mina Mounir Farid Gendi 1901384                  //
-//                                                                 //
-//                                                                 //
-//   Standard File Header Section  -------
-// FILE NAME      : APB_GPIO.v
-// AUTHOR         : Mina Mounir  Farid Gendi
-// DEPARTMENT     : Senior 1 Section 4 CSE Department Ain Shams University 
-// AUTHOR'S EMAIL : 1901384@eng.asu.edu.eg
-// ------------------------------------------------------------------
-// RELEASE HISTORY
-
-// KEYWORDS :  APB General Purpose IO GPIO     
-// ------------------------------------------------------------------
-// PURPOSE  : General purpose IO          
-// ------------------------------------------------------------------
-// PARAMETERS
-//  PARAM NAME        RANGE    DESCRIPTION              DEFAULT UNITS
-//  PDATA_SIZE        1+       Databus (and GPIO) size  32       bits
-//  PADDR_SIZE        1+       Addrbus (and GPIO) size  4        bits
-// ------------------------------------------------------------------
-// REUSE ISSUES 
-//   Reset Strategy      : external asynchronous active low; PRESETn
-//   Clock Domains       : PCLK, rising edge
-//   Clock frequency     : 770MHz (optimized)
-//   Test Features       : na
-//   Asynchronous I/F    : no
-//   Scan Methodology    : na
-//   Instantiations      : in GPIO testbench
-//   Synthesizable (y/n) : Yes
-//   APB role			 : slave     
-/*
- * address  description         comment
- * ------------------------------------------------------------------
- * 0x0      mode register       0=push-pull
- *                              1=open-drain
- * 0x1      direction register  0=input
- *                              1=output
- * 0x2      output register     mode-register=0? 0=drive pad low
- *                                               1=drive pad high
- *                              mode-register=1? 0=drive pad low
- *                                               1=open-drain
- * 0x3      input register      returns data at pad
-  */
-
-module apb_gpio1 (PRESETn,PCLK,PSEL,PENABLE,PADDR,PWRITE,PSTRB,PWDATA,PRDATA,PREADY,PSLEVRR,gpio_i,gpio_o,gpio_oe);
+module APB_GPIO (APB_RESET_n,APB_CLK,APB_PSEL,APB_PENABLE,APB_PADDR,APB_PWRITE,APB_PSTRB,APB_PWDATA,APB_PRDATA,APB_PREADY,APB_PSLEVRR,GPIO_i,GPIO_o,GPIO_oe);
 	parameter PDATA_SIZE = 32 ,PADDR_SIZE = 4; //must be multiple of 8
 	localparam MODE = 0,DIRECTION = 1,OUTPUT= 2,INPUT= 3, INPUT_STAGES = 2;
-	input PRESETn, PCLK, PENABLE, PWRITE,PSEL;
-	input[PADDR_SIZE-1:0] PADDR;
-	input[PDATA_SIZE/8-1:0] PSTRB;
-	input[PDATA_SIZE-1:0] PWDATA, gpio_i;
-	output reg[PDATA_SIZE-1:0]PRDATA,gpio_o,gpio_oe;
-	output reg PREADY ;
-	output PSLEVRR;
+	input APB_RESET_n, APB_CLK, APB_PENABLE, APB_PWRITE,APB_PSEL;
+	input[PADDR_SIZE-1:0] APB_PADDR;
+	input[PDATA_SIZE/8-1:0] APB_PSTRB;
+	input[PDATA_SIZE-1:0] APB_PWDATA, GPIO_i;
+	output reg[PDATA_SIZE-1:0]APB_PRDATA,GPIO_o,GPIO_oe;
+	output reg APB_PREADY ;
+	output reg APB_PSLEVRR;
 	reg[PDATA_SIZE-1:0]input_regs[0:INPUT_STAGES-1] ,dir_reg,out_reg,in_reg, mode_reg ;
-	integer i ,j,k;
-  
-	 //The core supports zero-wait state accesses on all transfers.
-  //It is allowed to drive PREADY with a hard wired signal
-	
-	assign PSLVERR = 1'b0; //Never an error
+	integer i ,j,k,l,c=0; //iteration variables for the "for" loop statements
+	 
+
 	//APB write to Mode register
   always @(posedge PCLK,negedge PRESETn)
     if      (!PRESETn) begin
