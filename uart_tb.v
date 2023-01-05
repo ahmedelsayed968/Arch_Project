@@ -1,8 +1,7 @@
-
 module uart_tb;
+  
     parameter APB_ADDR_WIDTH    = 32;
     parameter c_CLOCK_PERIOD_NS = 10;
-    parameter c_CLKS_PER_BIT    = 16;
     parameter c_BIT_PERIOD      = 160;
 
     reg                             CLK = 1'b1;                  
@@ -15,7 +14,7 @@ module uart_tb;
     wire               [31:0]       PRDATA;
     wire                            PREADY;
 
-    reg                             rx_i;                 
+    reg                             rx_i=1;                 
     wire                            tx_o;                  
     reg                             cfg_parity_en;
     reg                             [1:0]cfg_bits_i;
@@ -29,6 +28,9 @@ module uart_tb;
     wire                            bit_sent;
     reg                             start_count;
     reg [7:0]                       data_to_send;
+    reg                             rxStart,rst;
+    wire                            store,clrRxStartBit;
+    
     apb_uart apb_uart(.CLK(CLK),
                                           .RSTN(RSTN),
                                           .PADDR(PADDR),
@@ -46,7 +48,10 @@ module uart_tb;
                                           .error_in_receiving(error_in_receiving_o),
                                           .enable_error_detection(enable_error_detection_i),
                                           .rx_valid(rx_valid_o),
-                                          .READY_to_receive(READY_to_receive_i));
+                                          .READY_to_receive(READY_to_receive_i),
+                                           .store(store),
+                                           .clearRx(clrRxStartBit)  
+                                          );
 
     
     baud_rate b1(.clk_i(CLK),
@@ -57,7 +62,7 @@ module uart_tb;
     always
         #(c_CLOCK_PERIOD_NS/2) CLK <= !CLK;
 
-
+/*
 
     // Test tx
     initial begin
@@ -87,77 +92,65 @@ module uart_tb;
     end
 
 
-
+*/
 
 
     // // // Rx Testing
-    // task UART_WRITE_BYTE;
-    //   input [10:0] i_Data;
-    //   integer     ii;
-    //   begin
-        
-    //     // Send Start Bit
-    //     rx_i <= 1'b0;
-    //     #(c_BIT_PERIOD);
-    //     //#1000;
-        
-        
-    //     // Send Data Byte
-    //     for (ii=0; ii<8; ii=ii+1)
-    //       begin
-    //         rx_i <= i_Data[ii];
-    //         #(c_BIT_PERIOD);
-    //       end
-        
-    //     // Send Stop Bit
-    //     rx_i <= 1'b1;
-    //     #(c_BIT_PERIOD);
-    //   end
-    // endtask // UART_WRITE_BYTE  
-      
-    //   initial
-    //   begin
-    //     #10 RSTN = 1'b0;
-        
+  
+   
+  //reg rx_i = 1;
+
+  // Takes in input byte and serializes it 
+  task UART_WRITE_BYTE;
+    input [8:0] i_Data;
+    integer     ii;
+    begin
        
-    //     // APB Configuartion wires
-    //     // PWDATA = 32'b1010_0101;
-    //     PWRITE = 1'b0;
-    //     RSTN = 1'b1;
-    //     PSEL = 1'b1;
-    //     PENABLE = 1'b1;
-    //     READY_to_receive_i = 1'b1;
-    //     enable_error_detection_i = 1'b1;
-    //     cfg_stop_bits = 1'b0;
-    //     // cfg_div = 'd16;
-    //     cfg_parity_en = 1'b0;
-    //     cfg_bits_i = 2'b11;
-
-    //     //     cfg_stop_bits = 1'b0;
-
-
-            
-    //     // Send a command to the UART (exercise Rx)
-    //     // @(posedge CLK);
-    //     UART_WRITE_BYTE(8'b0000_1000);
-    //     // @(posedge CLK);
-
-      
-    //     // rx_i <= 1'b0;
-    //     // start_count = 1'b1;
-      
-    //     //#1000;
-     
+      // Send Start Bit
+      rx_i <= 1'b0;
+      #(c_BIT_PERIOD);
        
-    //     // Send Stop Bit
-
-    //     // Check that the correct command was received
-    //     if (PRDATA == {24'b0,8'b0000_1000})
-    //         $display("Test Passed - Correct Byte Received");
-    //     else
-    //         $display("Test Failed - Incorrect Byte Received");
        
-    //   end
+      // Send Data Byte
+      for (ii=0; ii<8; ii=ii+1)
+        begin
+          rx_i <= i_Data[ii];
+          #(c_BIT_PERIOD);
+        end
+       
+      // Send Stop Bit
+      rx_i <= 1'b0;
+      #(c_BIT_PERIOD);
+     end
+  endtask // UART_WRITE_BYTE  
+
+  always
+    #(c_CLOCK_PERIOD_NS/2) CLK <= !CLK;
+ 
+  // Main Testing:
+  initial
+    begin
+      
+  PWRITE = 1'b0;
+  RSTN = 1'b1;
+  PSEL = 1'b1;
+  PENABLE = 1'b1;
+  
+  RSTN = 1'b1;
+  #10
+  RSTN = 1'b0;
+  #10
+  RSTN = 1'b1;
+  rxStart =1'b1;
+           
+      // Send a command to the UART (exercise Rx)
+      @(posedge CLK);
+      UART_WRITE_BYTE(8'h00);
+      @(posedge CLK);
+             
+      // Check that the correct command was received
+
+    end
 
 
 endmodule
