@@ -1,6 +1,7 @@
 module apb_uart #(
     parameter   cfg_div=16'd16,
                 APB_ADDR_WIDTH = 'd32
+                
 )(
     input  wire                         CLK,                  // System Clock
     input  wire                         RSTN,                 // Reset bit
@@ -21,7 +22,10 @@ module apb_uart #(
     output  wire                        error_in_receiving,
     input wire                          enable_error_detection,      // Negative Logic!!!!! 
     output wire                         rx_valid,
-    input wire                          READY_to_receive                  
+    input wire                          READY_to_receive,
+    input wire                          store,
+    input wire                          clearRx    
+                          
     
 );
 
@@ -32,21 +36,14 @@ module apb_uart #(
     reg tx_valid;
     wire [10:0] rx_data;
    
-    uart_rx uart_rx_i(
-        .clk_i(CLK),
-        .rstn_i(RSTN),
-        .rx_i(rx_i),
-        .cfg_div_i(cfg_div),
-        .cfg_en_i(PENABLE),
-        .cfg_parity_en_i(cfg_parity_en),
-        .cfg_bits_i(cfg_bits),
-        .cfg_stop_bits_i(cfg_stop_bits),
-        .busy_o(rx_busy),
-        .err_o(error_in_receiving),
-        .err_clr_i(enable_error_detection),
-        .rx_data_o(rx_data),
-        .rx_valid_o(rx_valid),
-        .rx_ready_i(READY_to_receive)
+    uartRx uart_Rx(
+        .clk(CLK),
+        .rst(RSTN),
+        .rxD(rx_i),
+        .rxStart(PENABLE),
+        .rxData(rx_data),
+        .store(store),
+        .clrRxStartBit(clearRx)
     );
 
     uart_tx uart_tx_i
@@ -91,11 +88,16 @@ module apb_uart #(
     begin
         if(PSEL && PENABLE && !PWRITE)
         begin
-            if (rx_valid)           // then get the data from the output rx and save it on the PRDATA
+          if (store)
             begin
-                PRDATA <= {24'b0,rx_data};
-            end    
-               
+                PRDATA = {24'b0,rx_data[8:1]};
+     // Check that the correct command was received
+                  if (PRDATA[10:0] == 11'h00)
+                     $display("Test Passed - Correct Byte Received");
+                  else
+                      $display("Test Failed - Incorrect Byte Received");
+       
+            end 
         end
     end
     // always@(*)
